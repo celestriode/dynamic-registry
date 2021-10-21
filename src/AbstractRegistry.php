@@ -340,7 +340,7 @@ abstract class AbstractRegistry
      * method calls that add a value to the registry will instead add those values to a separate dynamic list of values.
      * Because of this, you can use any of the methods that add values without conflicting.
      */
-    final private function populateRegistryDynamically(): void
+    final protected function populateRegistryDynamically(): void
     {
         $this->populating = true;
 
