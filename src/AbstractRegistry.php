@@ -24,38 +24,38 @@ abstract class AbstractRegistry
     /**
      * @var AbstractRegistry[] Instances of registries.
      */
-    private static $instances = [];
+    private static array $instances = [];
 
     /**
      * @var DynamicPopulatorInterface[] A list of DynamicPopulatorInterface objects, which are used for population.
      */
-    private $populators = [];
+    private array $populators = [];
 
     /**
      * @var array An optional list of default values that will be part of the registry. When reset() is called, the
      * values listed here will be filled back into the registry.
      */
-    protected $defaultValues = [];
+    protected array $defaultValues = [];
 
     /**
      * @var Set The list of values associated with this registry, added manually through a variety of methods.
      */
-    private $values;
+    private Set $values;
 
     /**
      * @var Set The list of values associated with this registry, added through dynamic population via populate().
      */
-    private $dynamicValues;
+    private Set $dynamicValues;
 
     /**
      * @var bool Whether or not $values has been populated dynamically.
      */
-    private $populated = false;
+    private bool $populated = false;
 
     /**
      * @var bool State variable indicating whether or not the registry is currently populating.
      */
-    private $populating = false;
+    private bool $populating = false;
 
     /**
      * Returns a friendly name of the registry.
@@ -151,7 +151,7 @@ abstract class AbstractRegistry
      * @return $this
      * @throws InvalidValue
      */
-    public function addValue($value): self
+    public function addValue(mixed $value): self
     {
         if (!$this->validValue($value)) {
 
