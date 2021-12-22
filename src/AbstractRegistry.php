@@ -1,6 +1,7 @@
 <?php namespace Celestriode\DynamicRegistry;
 
 use Celestriode\DynamicRegistry\Exception\InvalidValue;
+use Ds\Set;
 
 /**
  * A registry contains a list of values to be used with various audits that rely on them. For example, if a string input
@@ -37,14 +38,14 @@ abstract class AbstractRegistry
     protected $defaultValues = [];
 
     /**
-     * @var array The list of values associated with this registry, added manually through a variety of methods.
+     * @var Set The list of values associated with this registry, added manually through a variety of methods.
      */
-    private $values = [];
+    private $values;
 
     /**
-     * @var array The list of values associated with this registry, added through dynamic population via populate().
+     * @var Set The list of values associated with this registry, added through dynamic population via populate().
      */
-    private $dynamicValues = [];
+    private $dynamicValues;
 
     /**
      * @var bool Whether or not $values has been populated dynamically.
@@ -71,6 +72,9 @@ abstract class AbstractRegistry
      */
     public function __construct(...$values)
     {
+        $this->values = new Set($this->defaultValues);
+        $this->dynamicValues = new Set();
+
         if (!empty($values)) {
 
             $this->setValues(...$values);
@@ -102,7 +106,7 @@ abstract class AbstractRegistry
     }
 
     /**
-     * Resets the registry and then adds the given values to it.
+     * Clears the registry and then adds the given values to it.
      *
      * @param mixed ...$values The values to add to the registry.
      * @return AbstractRegistry
@@ -112,10 +116,10 @@ abstract class AbstractRegistry
     {
         if ($this->populating) {
 
-            $this->dynamicValues = [];
+            $this->dynamicValues->clear();
         } else {
 
-            $this->values = [];
+            $this->values->clear();
         }
 
         $this->addValues(...$values);
@@ -161,10 +165,10 @@ abstract class AbstractRegistry
 
         if ($this->populating) {
 
-            $this->dynamicValues[] = $value;
+            $this->dynamicValues->add($value);
         } else {
 
-            $this->values[] = $value;
+            $this->values->add($value);
         }
 
         return $this;
@@ -180,7 +184,7 @@ abstract class AbstractRegistry
      */
     protected function validValue($value): bool
     {
-        if (in_array($value, $this->getValues())) {
+        if ($this->values->contains($value) || $this->dynamicValues->contains($value)) {
 
             return false;
         }
@@ -199,21 +203,19 @@ abstract class AbstractRegistry
     }
 
     /**
-     * Returns all the values of the registry. If the registry has no default values and hasn't been populated in some
+     * Returns the current values of the registry. If the registry has no default values and hasn't been populated in some
      * form, the array will be empty. Call populate() first or check populated().
      *
      * @return array
      */
     public function getValues(): array
     {
-        return array_merge($this->defaultValues, $this->values, $this->dynamicValues);
+        return array_merge($this->values->toArray(), $this->dynamicValues->toArray());
     }
 
     /**
      * Returns whether or not the given value exists within the registry. Attempts to populate the registry if it wasn't
      * already populated.
-     *
-     * Make sure you populate registries using the RegistryPopulator before calling this method.
      *
      * @param $value
      * @return bool
@@ -223,7 +225,9 @@ abstract class AbstractRegistry
         // Dynamically populate the registry before attempting a match, if it wasn't already populated.
         // Return whether or not the input is within the populated registry.
 
-        return in_array($value, $this->populate()->getValues());
+        $this->populate();
+
+        return $this->values->contains($value) || $this->dynamicValues->contains($value);
     }
 
     /**
@@ -255,7 +259,7 @@ abstract class AbstractRegistry
      */
     public function depopulate(): self
     {
-        $this->dynamicValues = [];
+        $this->dynamicValues->clear();
         $this->setPopulated(false);
 
         return $this;
@@ -267,11 +271,24 @@ abstract class AbstractRegistry
      *
      * @return $this
      */
+    public function clear(): self
+    {
+        $this->values->clear();
+        $this->depopulate();
+
+        return $this;
+    }
+
+    /**
+     * Clears the registry and puts back default values.
+     *
+     * @return $this
+     */
     public function reset(): self
     {
-        $this->values = [];
-        $this->dynamicValues = [];
-        $this->setPopulated(false);
+        $this->clear();
+
+        $this->values->add(...$this->defaultValues);
 
         return $this;
     }
